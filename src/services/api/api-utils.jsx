@@ -7,7 +7,6 @@ export async function api(path = '', method = 'GET', body = null) {
         headers: {
             'Content-Type': 'application/json; charset=utf-8',
             'X-Requested-With': 'XMLHttpRequest',
-            // 'Authorization': `Bearer ${token}`, // add if/when you store JWT
         },
     };
 
@@ -20,7 +19,7 @@ export async function api(path = '', method = 'GET', body = null) {
 export async function request(path = '', method = 'GET', body = null) {
     try {
         const res  = await api(path, method, body);
-        const data = await res.json().catch(() => null);   // handles 204
+        const data = await res.json().catch(() => null);
 
         if (res.ok) return { success: true, status: res.status, body: data };
 

@@ -1,0 +1,7 @@
+# Defaults to 'dev' if not specified
+./build.sh
+
+# Or specify the environment explicitly:
+./build.sh dev
+./build.sh stage
+./build.sh prod
