@@ -10,10 +10,12 @@ permissions:
   packages: write
 
 jobs:
+  # ─────────────────────────── BUILD ────────────────────────────────
   build-client:
     runs-on: ubuntu-latest
     env:
       ENVIRONMENT: ${{ github.ref == 'refs/heads/master' && 'prod' || 'dev' }}
+
     outputs:
       tag: ${{ steps.build.outputs.tag }}
 
@@ -27,15 +29,14 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - id: build
         name: Build & push multi-arch image
         run: |
           chmod +x ci/build-publish.sh
-          ./ci/build-publish.sh "$ENVIRONMENT"
+          ./ci/build-publish.sh "$ENVIRONMENT"      # scriptul scrie tag=$TAG în GITHUB_OUTPUT
 
-          # scriptul a exportat $TAG; îl trimitem spre outputs
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT" 
-
+  # ─────────────────────────── DEPLOY (master) ─────────────────────
   deploy-ec2:
     needs: build-client
     if: github.ref == 'refs/heads/master'
@@ -49,17 +50,18 @@ jobs:
           key:      ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -euo pipefail
-  
+
             ENV_FILE=/srv/online-shop/.env
             NEW_TAG="${{ needs.build-client.outputs.tag }}"
-  
+
             echo "🔄  Set CLIENT_TAG=$NEW_TAG"
             if grep -q '^CLIENT_TAG=' "$ENV_FILE"; then
               sudo sed -i "s/^CLIENT_TAG=.*/CLIENT_TAG=$NEW_TAG/" "$ENV_FILE"
             else
               echo "CLIENT_TAG=$NEW_TAG" | sudo tee -a "$ENV_FILE"
             fi
-  
-            echo "🚢  Pull & restart"
-            sudo docker compose -f /srv/online-shop/docker-compose.yml pull client
-            sudo docker compose -f /srv/online-shop/docker-compose.yml up -d --no-deps client
+
+            echo "🚢  Pull & restart client"
+            # dacă fișierul tău se numește docker-compose.yml, schimbă extensia aici
+            sudo docker compose -f /srv/online-shop/docker-compose.yaml pull client
+            sudo docker compose -f /srv/online-shop/docker-compose.yaml up -d --no-deps client
