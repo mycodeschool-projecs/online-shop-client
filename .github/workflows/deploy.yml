@@ -3,7 +3,7 @@ name: CD – Deploy Online Shop (Client)
 on:
   push:
     branches:
-      - main
+      - master
       - develop
       - feature/**
   workflow_dispatch:
@@ -16,7 +16,7 @@ jobs:
   build-client:
     runs-on: ubuntu-latest
     env:
-      ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+      ENVIRONMENT: ${{ github.ref == 'refs/heads/master' && 'prod' || 'dev' }}
 
     steps:
       - name: Checkout code
