@@ -62,5 +62,5 @@ jobs:
             fi
 
             echo "🚢  Pulling & restarting client container"
-            sudo docker compose -f /srv/online-shop/docker-compose.yml pull client
-            sudo docker compose -f /srv/online-shop/docker-compose.yml up -d --no-deps client
+            sudo docker compose -f /srv/online-shop/docker-compose.yaml pull client
+            sudo docker compose -f /srv/online-shop/docker-compose.yaml up -d --no-deps client
