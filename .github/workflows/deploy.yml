@@ -36,30 +36,30 @@ jobs:
           # scriptul a exportat $TAG; îl trimitem spre outputs
           echo "tag=$TAG" >> "$GITHUB_OUTPUT" 
 
-deploy-ec2:
-  needs: build-client
-  if: github.ref == 'refs/heads/master'
-  runs-on: ubuntu-latest
-  steps:
-    - name: Update tag & restart client
-      uses: appleboy/ssh-action@v0.1.10
-      with:
-        host:     ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key:      ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          set -euo pipefail
-
-          ENV_FILE=/srv/online-shop/.env
-          NEW_TAG="${{ needs.build-client.outputs.tag }}"
-
-          echo "🔄  Set CLIENT_TAG=$NEW_TAG"
-          if grep -q '^CLIENT_TAG=' "$ENV_FILE"; then
-            sudo sed -i "s/^CLIENT_TAG=.*/CLIENT_TAG=$NEW_TAG/" "$ENV_FILE"
-          else
-            echo "CLIENT_TAG=$NEW_TAG" | sudo tee -a "$ENV_FILE"
-          fi
-
-          echo "🚢  Pull & restart"
-          sudo docker compose -f /srv/online-shop/docker-compose.yml pull client
-          sudo docker compose -f /srv/online-shop/docker-compose.yml up -d --no-deps client
+  deploy-ec2:
+    needs: build-client
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update tag & restart client
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host:     ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key:      ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -euo pipefail
+  
+            ENV_FILE=/srv/online-shop/.env
+            NEW_TAG="${{ needs.build-client.outputs.tag }}"
+  
+            echo "🔄  Set CLIENT_TAG=$NEW_TAG"
+            if grep -q '^CLIENT_TAG=' "$ENV_FILE"; then
+              sudo sed -i "s/^CLIENT_TAG=.*/CLIENT_TAG=$NEW_TAG/" "$ENV_FILE"
+            else
+              echo "CLIENT_TAG=$NEW_TAG" | sudo tee -a "$ENV_FILE"
+            fi
+  
+            echo "🚢  Pull & restart"
+            sudo docker compose -f /srv/online-shop/docker-compose.yml pull client
+            sudo docker compose -f /srv/online-shop/docker-compose.yml up -d --no-deps client
