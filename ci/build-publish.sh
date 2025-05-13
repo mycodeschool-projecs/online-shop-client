@@ -48,3 +48,7 @@ docker buildx build \
   . --push
 
 printf '\n✅  Done! Multi‑arch image pushed as: %s\n' "$FULL_IMAGE"
+# --- Output pentru GitHub Actions (doar când rulez în workflow) ---
+if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+  echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+fi
