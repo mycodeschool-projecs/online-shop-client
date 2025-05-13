@@ -51,7 +51,6 @@ jobs:
           script: |
             set -euo pipefail
             echo "📥  git pull..."
-            git -C /srv/online-shop pull origin master
 
             ENV_FILE=/srv/online-shop/.env
             NEW_TAG=${{ needs.build-client.outputs.tag }}
