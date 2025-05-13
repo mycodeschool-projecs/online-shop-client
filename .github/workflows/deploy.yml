@@ -37,3 +37,31 @@ jobs:
         run: |
           chmod +x ci/build-publish.sh
           ./ci/build-publish.sh "$ENVIRONMENT"
+  deploy-ec2:
+    needs: build-client
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git pull + update tag + restart client
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            echo "📥  git pull..."
+            git -C /srv/online-shop pull origin master
+
+            ENV_FILE=/srv/online-shop/.env
+            NEW_TAG=${{ needs.build-client.outputs.tag }}
+            echo "🔄  Writing CLIENT_TAG=$NEW_TAG into $ENV_FILE"
+            if grep -q '^CLIENT_TAG=' "$ENV_FILE"; then
+              sed -i "s/^CLIENT_TAG=.*/CLIENT_TAG=$NEW_TAG/" "$ENV_FILE"
+            else
+              echo "CLIENT_TAG=$NEW_TAG" >> "$ENV_FILE"
+            fi
+
+            echo "🚢  Pulling & restarting client container"
+            sudo docker compose -f /srv/online-shop/docker-compose.yml pull client
+            sudo docker compose -f /srv/online-shop/docker-compose.yml up -d --no-deps client
