@@ -2,10 +2,7 @@ name: CD – Deploy Online Shop (Client)
 
 on:
   push:
-    branches:
-      - master
-      - develop
-      - feature/**
+    branches: [ master, develop, feature/** ]
   workflow_dispatch:
 
 permissions:
@@ -17,26 +14,28 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ENVIRONMENT: ${{ github.ref == 'refs/heads/master' && 'prod' || 'dev' }}
+    outputs:
+      tag: ${{ steps.build.outputs.tag }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build & push multi-arch image
+      - id: build
+        name: Build & push multi-arch image
         run: |
           chmod +x ci/build-publish.sh
           ./ci/build-publish.sh "$ENVIRONMENT"
+
+          # scriptul a exportat $TAG; îl trimitem spre outputs
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT" 
+
   deploy-ec2:
     needs: build-client
     if: github.ref == 'refs/heads/master'
@@ -45,15 +44,15 @@ jobs:
       - name: Git pull + update tag + restart client
         uses: appleboy/ssh-action@v0.1.10
         with:
-          host: ${{ secrets.EC2_HOST }}
+          host:     ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key:      ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -euo pipefail
-            echo "📥  git pull..."
+            git -C /srv/online-shop pull origin master
 
             ENV_FILE=/srv/online-shop/.env
-            NEW_TAG=${{ needs.build-client.outputs.tag }}
+            NEW_TAG="${{ needs.build-client.outputs.tag }}"   # ← now populated
             echo "🔄  Writing CLIENT_TAG=$NEW_TAG into $ENV_FILE"
             if grep -q '^CLIENT_TAG=' "$ENV_FILE"; then
               sed -i "s/^CLIENT_TAG=.*/CLIENT_TAG=$NEW_TAG/" "$ENV_FILE"
@@ -61,6 +60,5 @@ jobs:
               echo "CLIENT_TAG=$NEW_TAG" >> "$ENV_FILE"
             fi
 
-            echo "🚢  Pulling & restarting client container"
-            sudo docker compose -f /srv/online-shop/docker-compose.yaml pull client
-            sudo docker compose -f /srv/online-shop/docker-compose.yaml up -d --no-deps client
+            sudo docker compose -f /srv/online-shop/docker-compose.yml pull client
+            sudo docker compose -f /srv/online-shop/docker-compose.yml up -d --no-deps client
