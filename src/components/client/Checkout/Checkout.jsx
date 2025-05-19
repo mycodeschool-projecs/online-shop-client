@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import CheckoutProduct from "./CheckoutProduct";
 import { useNavigate, Link } from 'react-router-dom';
 import { addOrder } from "../../../services/api/orderService";
-import { clearUserCart, getCartByUserId } from "../../../services/api/cartService";
+import { clearUserCart, getCart } from "../../../services/api/cartService";
 
 export default function Checkout(){
 
@@ -11,13 +11,10 @@ export default function Checkout(){
     const [orderPlaced, setOrderPlaced] = useState(false);
 
     const navigate = useNavigate();
-    const handleNavigation = (event, path) => {
-        event.preventDefault();
-        navigate(path);
-    };
+
 
     const fetchUserCart = async () => {
-        let data = await getCartByUserId();
+        let data = await getCart();
         if (data.success) {
             setCart(data.body.list);
         }

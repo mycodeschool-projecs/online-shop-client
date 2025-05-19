@@ -1,5 +1,5 @@
 import {  useState, useEffect } from "react";
-import { getCartByUserId } from "../../../services/api/cartService";
+import {deleteProductFromCart, getCart} from "../../../services/api/cartService";
 import CartProductCard from "../CartProductCard/CartProductCard";
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -12,7 +12,7 @@ export default function Cart() {
     ;
     
     const fetchUserCart = async () => {
-        let data = await getCartByUserId();
+        let data = await getCart();
 
         if (data.success) {
             setCart(data.body.list);
